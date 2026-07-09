@@ -60,48 +60,52 @@ CACHE_DIR.mkdir(exist_ok=True)
 
 @st.cache_data
 def load_cached_table(excel_path_str: str, parquet_path_str: str, excel_mtime: float):
-    """Load dataframe from Parquet if up-to-date, otherwise (re)create from Excel.
-
-    The function is cached by Streamlit and will invalidate when `excel_mtime` changes.
-    """
+    """Load dataframe from Parquet if available, otherwise read from Excel and cache as Parquet."""
     excel_path = Path(excel_path_str)
     parquet_path = Path(parquet_path_str)
-    # If parquet exists and is newer-or-equal than the source Excel, use it
+
     if parquet_path.exists():
         try:
-            parquet_mtime = parquet_path.stat().st_mtime
-            if parquet_mtime >= excel_mtime:
-                df = pd.read_parquet(parquet_path)
-                return df, excel_path.name
-            # else: fall through to recreate from Excel
+            df = pd.read_parquet(parquet_path)
+            return df, parquet_path.name
         except Exception:
-            # fallback to recreating
             pass
 
-    # create parquet from excel (expensive, done once or when source changed)
-    df = pd.read_excel(excel_path, engine="openpyxl")
-    try:
-        df.to_parquet(parquet_path, index=False)
-    except Exception:
-        # best-effort: if parquet write fails, proceed without caching
-        pass
-    return df, excel_path.name
+    if excel_path.exists():
+        df = pd.read_excel(excel_path, engine="openpyxl")
+        try:
+            df.to_parquet(parquet_path, index=False)
+        except Exception:
+            pass
+        return df, excel_path.name
 
-# Auto-load specific filename if present, using cached Parquet
-auto_file = workspace_root / ".devcontainer" / "aaa.xlsx"
-if auto_file.exists() and auto_file.is_file():
-    parquet_file = CACHE_DIR / f"{auto_file.stem}.parquet"
-    excel_mtime = auto_file.stat().st_mtime
+    raise FileNotFoundError(f"No readable data file found at {excel_path} or {parquet_path}")
+
+# Auto-load specific filename if present, preferring Parquet over Excel
+auto_excel = workspace_root / ".devcontainer" / "aaa.xlsx"
+auto_parquet = workspace_root / ".devcontainer" / "aaa.parquet"
+if auto_parquet.exists() and auto_parquet.is_file():
     try:
-        df, source_name = load_cached_table(str(auto_file), str(parquet_file), excel_mtime)
+        df = pd.read_parquet(auto_parquet)
+        source_name = auto_parquet.name
+        st.success(f"Auto-loaded {source_name} from .devcontainer with {len(df)} rows and {len(df.columns)} columns.")
     except Exception as exc:
-        st.error(f"Unable to read auto-loaded file {auto_file}: {exc}")
+        st.error(f"Unable to read auto-loaded Parquet file {auto_parquet}: {exc}")
         df = None
-        source_name = auto_file.name
+        source_name = None
+elif auto_excel.exists() and auto_excel.is_file():
+    parquet_file = CACHE_DIR / f"{auto_excel.stem}.parquet"
+    excel_mtime = auto_excel.stat().st_mtime
+    try:
+        df, source_name = load_cached_table(str(auto_excel), str(parquet_file), excel_mtime)
+    except Exception as exc:
+        st.error(f"Unable to read auto-loaded file {auto_excel}: {exc}")
+        df = None
+        source_name = None
     else:
-        st.success(f"Auto-loaded {source_name} from .devcontainer (cached) with {len(df)} rows and {len(df.columns)} columns.")
+        st.success(f"Auto-loaded {source_name} from .devcontainer with {len(df)} rows and {len(df.columns)} columns.")
 else:
-    st.info("The auto-loaded workbook is not present in the deployment environment. Upload or point the app to a local Excel file.")
+    st.info("The auto-loaded workbook is not present in the deployment environment. Upload or point the app to a local Excel or Parquet file.")
     df = None
     source_name = None
 
