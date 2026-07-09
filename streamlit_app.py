@@ -1,8 +1,6 @@
 from pathlib import Path
 
 import pandas as pd
-import pyarrow.parquet as pq
-import duckdb
 import streamlit as st
 
 st.set_page_config(page_title="AAA Arbitration Data Explorer", layout="wide")
@@ -140,32 +138,13 @@ else:
 col1, col2, col3 = st.columns(3)
 # Full-table search/filtering (searches across all columns)
 search_text = st.text_input("Search (substring across all columns)")
-use_duckdb = st.checkbox("Use DuckDB for fast parquet-backed queries (recommended)", value=True)
 if search_text:
     with st.spinner("Searching across all rows..."):
         s = search_text.strip()
-        # Prefer DuckDB on Parquet for large datasets
-        if use_duckdb and 'parquet_file' in locals() and parquet_file is not None and parquet_file.exists():
-            try:
-                s_escaped = s.replace("'", "''").lower()
-                # read column names from parquet
-                columns = pq.ParquetFile(str(parquet_file)).schema.names
-                # build concat of lower(...) for all cols
-                concat_expr = " || ' ' || ".join([f"lower(\"{c}\")" for c in columns])
-                sql = f"SELECT * FROM parquet_scan('{parquet_file}') WHERE ({concat_expr}) LIKE '%{s_escaped}%'"
-                # limit results for interactive display to avoid rendering too many rows
-                sql_limited = sql + " LIMIT 10000"
-                df_filtered = duckdb.query(sql_limited).df()
-            except Exception:
-                # fallback to in-memory search
-                row_strings = df.fillna("").astype(str).agg(" ".join, axis=1)
-                mask = row_strings.str.contains(s, case=False, na=False)
-                df_filtered = df[mask]
-        else:
-            # Build a single string per row and do a case-insensitive substring match
-            row_strings = df.fillna("").astype(str).agg(" ".join, axis=1)
-            mask = row_strings.str.contains(s, case=False, na=False)
-            df_filtered = df[mask]
+        # Build a single string per row and do a case-insensitive substring match
+        row_strings = df.fillna("").astype(str).agg(" ".join, axis=1)
+        mask = row_strings.str.contains(s, case=False, na=False)
+        df_filtered = df[mask]
     st.info(f"Showing {len(df_filtered)} of {len(df)} rows matching '{s}'")
 else:
     df_filtered = df
