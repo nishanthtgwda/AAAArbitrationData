@@ -168,8 +168,3 @@ else:
     rows = st.number_input("Preview rows", min_value=10, max_value=10000, value=100, step=10)
     st.dataframe(df_filtered.head(rows), use_container_width=True)
 
-with st.expander("Column details"):
-    st.dataframe(df.dtypes.astype(str).to_frame("dtype"), use_container_width=True)
-
-with st.expander("Summary statistics"):
-    st.dataframe(df.describe(include="all").transpose(), use_container_width=True)
