@@ -142,7 +142,7 @@ if df is None:
 
 col1, col2, col3 = st.columns(3)
 # Full-table search/filtering (searches across all columns)
-search_text = st.text_input("Search (substring across all columns)")
+search_text = st.text_input("Search (substring across all columns)", value="Thomas James Homes")
 if search_text:
     with st.spinner("Searching across all rows..."):
         s = search_text.strip()
@@ -153,11 +153,6 @@ if search_text:
     st.info(f"Showing {len(df_filtered)} of {len(df)} rows matching '{s}'")
 else:
     df_filtered = df
-
-col1, col2, col3 = st.columns(3)
-col1.metric("Rows", len(df_filtered))
-col2.metric("Columns", len(df.columns))
-col3.metric("Missing values", int(df_filtered.isna().sum().sum()))
 
 st.subheader("Data preview")
 show_all = st.checkbox("Show all rows (may be slow for large datasets)")
