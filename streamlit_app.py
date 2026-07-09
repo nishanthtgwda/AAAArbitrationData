@@ -97,11 +97,16 @@ if auto_file.exists() and auto_file.is_file():
         df, source_name = load_cached_table(str(auto_file), str(parquet_file), excel_mtime)
     except Exception as exc:
         st.error(f"Unable to read auto-loaded file {auto_file}: {exc}")
-        st.stop()
-
-    st.success(f"Auto-loaded {source_name} from .devcontainer (cached) with {len(df)} rows and {len(df.columns)} columns.")
+        df = None
+        source_name = auto_file.name
+    else:
+        st.success(f"Auto-loaded {source_name} from .devcontainer (cached) with {len(df)} rows and {len(df.columns)} columns.")
 else:
     st.info("The auto-loaded workbook is not present in the deployment environment. Upload or point the app to a local Excel file.")
+    df = None
+    source_name = None
+
+if df is None:
     file_path_input = st.text_input(
         "Path to your file",
         value=str(local_data_file) if local_data_file else "",
