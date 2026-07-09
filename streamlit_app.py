@@ -164,7 +164,7 @@ else:
     df_filtered = df
 
 st.subheader("AAA case data")
-show_all = st.checkbox("Show all rows (may be slow for large datasets)")
+show_all = st.checkbox("Show all rows (may be slow for large datasets)", value=True)
 if show_all:
     st.warning("Rendering all rows may be slow in the browser — consider downloading or using filters.")
     st.dataframe(df_filtered, use_container_width=True)
