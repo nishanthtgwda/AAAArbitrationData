@@ -144,16 +144,25 @@ if df is None:
         st.info("Enter the full path to your .xlsx file above and click Load file.")
         st.stop()
 
-col1, col2, col3 = st.columns(3)
-# Full-table search/filtering (searches across all columns)
+# Full-table search/filtering over text-like columns only
 search_text = st.text_input("Search (substring across all columns)", value="Thomas James Homes")
 if search_text:
     with st.spinner("Searching across all rows..."):
         s = search_text.strip()
-        # Build a single string per row and do a case-insensitive substring match
-        row_strings = df.fillna("").astype(str).agg(" ".join, axis=1)
-        mask = row_strings.str.contains(s, case=False, na=False)
-        df_filtered = df[mask]
+        text_columns = [
+            col
+            for col in df.columns
+            if pd.api.types.is_object_dtype(df[col])
+            or pd.api.types.is_string_dtype(df[col])
+            or pd.api.types.is_categorical_dtype(df[col])
+        ]
+        if not text_columns:
+            df_filtered = df
+        else:
+            mask = pd.Series(False, index=df.index)
+            for col in text_columns:
+                mask |= df[col].fillna("").astype(str).str.contains(s, case=False, na=False, regex=False)
+            df_filtered = df[mask]
     st.info(f"Showing {len(df_filtered)} of {len(df)} rows matching '{s}'")
 else:
     df_filtered = df
