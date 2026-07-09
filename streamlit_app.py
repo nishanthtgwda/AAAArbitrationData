@@ -88,7 +88,6 @@ if auto_parquet.exists() and auto_parquet.is_file():
     try:
         df = pd.read_parquet(auto_parquet)
         source_name = auto_parquet.name
-        st.success(f"Auto-loaded {source_name} from .devcontainer with {len(df)} rows and {len(df.columns)} columns.")
     except Exception as exc:
         st.error(f"Unable to read auto-loaded Parquet file {auto_parquet}: {exc}")
         df = None
@@ -102,10 +101,7 @@ elif auto_excel.exists() and auto_excel.is_file():
         st.error(f"Unable to read auto-loaded file {auto_excel}: {exc}")
         df = None
         source_name = None
-    else:
-        st.success(f"Auto-loaded {source_name} from .devcontainer with {len(df)} rows and {len(df.columns)} columns.")
 else:
-    st.info("The auto-loaded workbook is not present in the deployment environment. Upload or point the app to a local Excel or Parquet file.")
     df = None
     source_name = None
 
