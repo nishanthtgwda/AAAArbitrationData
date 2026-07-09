@@ -5,7 +5,6 @@ import streamlit as st
 
 st.set_page_config(page_title="AAA Arbitration Data Explorer", layout="wide")
 st.title("⚖️ AAA Arbitration Data Explorer")
-st.write("Point the app to your Excel file on disk to inspect it. This avoids upload limits for large files.")
 
 SUPPORTED_EXTENSIONS = {".csv", ".xlsx", ".xls", ".xlsm", ".xltx", ".xltm", ".json", ".parquet"}
 
